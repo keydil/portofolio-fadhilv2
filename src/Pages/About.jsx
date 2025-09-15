@@ -1,4 +1,4 @@
-import React, { useEffect, memo, useMemo } from "react";
+import React, { useEffect, memo, useMemo, useState } from "react";
 import {
   FileText,
   Code,
@@ -73,7 +73,7 @@ const ProfileImage = memo(() => (
 ));
 
 const StatCard = memo(
-  ({ icon: Icon, color, value, label, description, animation }) => (
+  ({ icon: Icon, color, value, label, description, animation, isLoading }) => (
     <div
       data-aos={animation}
       data-aos-duration={1300}
@@ -89,12 +89,16 @@ const StatCard = memo(
             <Icon className="w-8 h-8 text-white" />
           </div>
           <span
-            className="text-4xl font-bold text-white"
+            className="text-4xl font-bold text-white flex items-center"
             data-aos="fade-up-left"
             data-aos-duration="1500"
             data-aos-anchor-placement="top-bottom"
           >
-            {value}
+            {isLoading ? (
+              <div className="animate-pulse bg-gray-600 rounded w-12 h-10"></div>
+            ) : (
+              value
+            )}
           </span>
         </div>
 
@@ -125,13 +129,44 @@ const StatCard = memo(
 );
 
 const AboutPage = () => {
-  // Memoized calculations
-  const { totalProjects, totalCertificates, YearExperience } = useMemo(() => {
-    const storedProjects = JSON.parse(localStorage.getItem("projects") || "[]");
-    const storedCertificates = JSON.parse(
-      localStorage.getItem("certificates") || "[]"
-    );
+  // State untuk loading dan data
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [localStorageData, setLocalStorageData] = useState({
+    projects: [],
+    certificates: []
+  });
 
+  // Load data dari localStorage setelah component mount
+  useEffect(() => {
+    const loadLocalStorageData = () => {
+      try {
+        const storedProjects = JSON.parse(localStorage.getItem("projects") || "[]");
+        const storedCertificates = JSON.parse(localStorage.getItem("certificates") || "[]");
+        
+        setLocalStorageData({
+          projects: storedProjects,
+          certificates: storedCertificates
+        });
+        setDataLoaded(true);
+      } catch (error) {
+        console.error("Error loading localStorage data:", error);
+        // Fallback ke data kosong jika ada error
+        setLocalStorageData({
+          projects: [],
+          certificates: []
+        });
+        setDataLoaded(true);
+      }
+    };
+
+    // Delay sedikit untuk memastikan localStorage ready
+    const timeoutId = setTimeout(loadLocalStorageData, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Memoized calculations - sekarang depend on localStorageData
+  const { totalProjects, totalCertificates, YearExperience } = useMemo(() => {
     const startDate = new Date("2021-11-06");
     const today = new Date();
     const experience =
@@ -143,11 +178,11 @@ const AboutPage = () => {
         : 0);
 
     return {
-      totalProjects: storedProjects.length,
-      totalCertificates: storedCertificates.length,
+      totalProjects: localStorageData.projects.length,
+      totalCertificates: localStorageData.certificates.length,
       YearExperience: experience,
     };
-  }, []);
+  }, [localStorageData]);
 
   // Optimized AOS initialization
   useEffect(() => {
@@ -301,7 +336,7 @@ const AboutPage = () => {
         <a href="#Portofolio">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 cursor-pointer">
             {statsData.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
+              <StatCard key={stat.label} {...stat} isLoading={!dataLoaded} />
             ))}
           </div>
         </a>
