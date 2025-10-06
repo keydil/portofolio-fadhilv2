@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://portofolio-fadhil-firdaus-adha.vercel.app//sitemap.xml
+Sitemap: https://www.fadhilfa.my.id/sitemap.xml
